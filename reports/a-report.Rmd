@@ -8,10 +8,36 @@ theme: sandstone
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
+library(ggplot2)
 source(here::here("code/lib.R"))
 theme_set(theme_bw())
 ```
 
+
 ```{r read}
 atividade = read_projectdata()
 ```
+
+```{r}
+totais <- atividade %>% 
+  filter(!is.na(seguidores)) %>%
+  summarize(n_politicos = n(),
+            n_seguidores = sum(seguidores))
+seguidores <- atividade %>% 
+  select(id_parlamentar, partido, seguidores) %>%
+  filter(!is.na(seguidores)) %>%
+  group_by(partido) %>%
+  summarize(n_politicos = n(),
+            n_seguidores = sum(seguidores),
+            prop_politico = as.double(n_politicos)*100/totais$n_politicos,
+            prop_seguidores = as.double(n_seguidores)*100/totais$n_seguidores)
+```
+
+```{r}
+seguidores %>%
+  ggplot(aes(x= prop_politico, y = prop_seguidores, color = partido)) +
+  geom_point()
+  
+```
+
+
