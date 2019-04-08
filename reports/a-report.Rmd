@@ -25,7 +25,8 @@ totais <- atividade %>%
             n_seguidores = sum(seguidores))
 seguidores <- atividade %>% 
   select(id_parlamentar, partido, seguidores) %>%
-  filter(!is.na(seguidores)) %>%
+  filter(!is.na(seguidores))
+%>%
   group_by(partido) %>%
   summarize(QntPoliticos = n(),
             QntSeguidores = sum(seguidores),
@@ -35,9 +36,9 @@ seguidores <- atividade %>%
 ```
 
 ```{r}
-partido <- c("NOVO", "PDT", "AVANTE", "PCdoB", "PROS", "PSB", "PT", "REDE","PSOL","PSL","PRP", "PR", "PRB","MDB", "PTB","PP","DEM","SD", "PSD","PHS","PODE", "PSC", "PSDB", "PATRI", "PMN", "PPS", "PV","S/Partido")
+partido <- c("NOVO", "PDT", "AVANTE", "PCdoB", "PROS", "PSB", "PT", "REDE","PSOL","PSL","PRP", "PR", "PRB","MDB", "PTB","PP","DEM","SD", "PSD","PHS","PODE", "PSC", "PSDB", "PATRI", "PMN", "PPS", "PV","S/Partido", "SOLIDARIEDADE")
 # posicao<-c("DIREITA","CE","C", "EE", "CDIREITA", "CE","E", "CE","EE","DIREITA","ED","CDIREITA", "CDIREITA","C","C","DIREITA","CDIREITA", "CE", "CD","CD", "C","D","C","ED","CE", "CE", "CE","S/Partido")
-posicao<-c("DIREITA", "ESQUERDA", "CENTRO", "ESQUERDA", "DIREITA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "DIREITA", "DIREITA", "DIREITA", "DIREITA", "CENTRO", "CENTRO", "DIREITA", "DIREITA", "ESQUERDA", "DIREITA","DIREITA", "CENTRO","DIREITA", "CENTRO","DIREITA","ESQUERDA", "ESQUERDA", "ESQUERDA","S/Partido")
+posicao<-c("DIREITA", "ESQUERDA", "CENTRO", "ESQUERDA", "DIREITA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "DIREITA", "DIREITA", "DIREITA", "DIREITA", "CENTRO", "CENTRO", "DIREITA", "DIREITA", "ESQUERDA", "DIREITA","DIREITA", "CENTRO","DIREITA", "CENTRO","DIREITA","ESQUERDA", "ESQUERDA", "ESQUERDA","S/Partido", "ESQUERDA")
 posicao <- data.frame(partido, posicao)
 partido_posicao <- merge(seguidores, posicao)
 ```
@@ -50,7 +51,27 @@ ggplotly(partido_posicao %>%
   geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido), y = Seguidores, color = posicao), alpha=.7, size = 4))
   
 ```
+```{r}
+totais <- atividade %>% 
+  filter(!is.na(seguidores), casa == 'câmara') %>%
+  summarize(n_politicos = n(),
+            n_seguidores = sum(seguidores))
+seguidores <- atividade %>% 
+  select(id_parlamentar, partido, seguidores, casa) %>%
+  filter(!is.na(seguidores), casa == 'câmara') %>%
+  group_by(partido) %>%
+  summarize(QntPoliticos = n(),
+            QntSeguidores = sum(seguidores),
+            Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
+            Seguidores = round(QntSeguidores*100/totais$n_seguidores,2)) %>%
+	ungroup() 
 
+partido_posicao <- merge(seguidores, posicao)
+ggplotly(partido_posicao %>%
+  ggplot() +
+  geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido),  y = Seguidores, color = posicao), alpha=.7, size = 4))
+
+```
 ```{r}
 atividade %>% 
   filter(!is.na(engaj_total) &engaj_total<10000) %>%
@@ -83,11 +104,30 @@ atv_total <- atividade %>%
   distinct(UF, .keep_all = T) %>% 
   select(-engaj_total) %>%
   arrange(UF) %>%
+  ungroup() %>%
   mutate(regiao = c("NORTE", "NORDESTE", "NORTE", "NORTE", "NORDESTE", "NORDESTE", "CENTRO", "SUDESTE", "CENTRO", "NORDESTE", "SUDESTE", "CENTRO", "CENTRO", "NORTE", "NORDESTE", "NORDESTE", "NORDESTE", "SUL", "SUDESTE", "NORDESTE", "NORTE", "NORTE","SUL", "SUL", "NORDESTE", "SUDESTE", "NORTE"))
 atv_total$UF
 ggplot() +
-  geom_point(atv_total, mapping= aes(x=UF, y=atv)) +
+  geom_point(atv_total, mapping= aes(x=UF, y=atv, color=regiao), size = 3 ) +
   geom_point(atividade, mapping= aes(x=UF, y=engaj_total), alpha = .08, color = 'navy')
     
+```
+```{r}
+atv_total <- atividade %>%
+  select(partido, engaj_total) %>%
+  filter(!is.na(engaj_total)) %>%
+  group_by(partido) %>%
+  mutate(atv = sum(engaj_total)) %>%
+  distinct(partido, .keep_all = T) %>% 
+  select(-engaj_total) 
+
+ggplot() +
+  geom_point(atv_total, mapping= aes(x=reorder(partido, atv), y=atv), size = 3, color='red', alpha = .6 )+
+  geom_point(atividade, mapping= aes(x=partido, y=engaj_total), alpha = .1, color = 'navy') + 
+  theme(axis.text.x = element_text(angle = 90))
+    
+```
+```{r}
+
 ```
 
