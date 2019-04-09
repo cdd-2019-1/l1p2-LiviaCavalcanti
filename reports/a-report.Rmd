@@ -1,118 +1,116 @@
 ---
-title: "REPLACE ME"
+title: "Tweets dos congressitas brasileiros em 2019"
 output:
     html_document:
     df_print: paged
 theme: sandstone
+author: "Lívia Cavalcanti"
 ---
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
+library(plotly) ## apenas para o hover, pois não estava legível
+
 source(here::here("code/lib.R"))
 theme_set(theme_bw())
 ```
 
-
+A análise foi feita com base nos dados sobre as atividades dos representantes federais no twitter em 2019.
+Os campos utilizados aqui foram: o identificador do parlamentar, a casa, o partido, a UF, a quantidade de seguidores e o engajamento total(quantidade de likes e retweets para os tweets vistos).
 ```{r read}
 atividade = read_projectdata()
+tail(atividade)
 ```
+### Primeira Pergunta: Os partidos com mais deputados têm, proporcionalmente, mais seguidores?
 
+Aqui pretende-se ver se a quantidade de deputados representando um partido torna-o mais popular no Twitter ou se poucos indivíduos podem despontar a quatidade de seguidores por todo partido.
+Além dos partidos, adicionou-se a informação do posicionamento ideológico para talvez identificar uma relação, adicional com o número de seguidores.
 ```{r}
+
 totais <- atividade %>% 
-  filter(!is.na(seguidores)) %>%
+  filter(!is.na(seguidores) & casa == "câmara") %>%
   summarize(n_politicos = n(),
             n_seguidores = sum(seguidores))
 seguidores <- atividade %>% 
   select(id_parlamentar, partido, seguidores) %>%
-  filter(!is.na(seguidores))
-%>%
+  filter(!is.na(seguidores))%>%
   group_by(partido) %>%
   summarize(QntPoliticos = n(),
             QntSeguidores = sum(seguidores),
             Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
             Seguidores = round(QntSeguidores*100/totais$n_seguidores,2))
 
+
 ```
 
-```{r}
+
+```{r echo=FALSE}
 partido <- c("NOVO", "PDT", "AVANTE", "PCdoB", "PROS", "PSB", "PT", "REDE","PSOL","PSL","PRP", "PR", "PRB","MDB", "PTB","PP","DEM","SD", "PSD","PHS","PODE", "PSC", "PSDB", "PATRI", "PMN", "PPS", "PV","S/Partido", "SOLIDARIEDADE")
-# posicao<-c("DIREITA","CE","C", "EE", "CDIREITA", "CE","E", "CE","EE","DIREITA","ED","CDIREITA", "CDIREITA","C","C","DIREITA","CDIREITA", "CE", "CD","CD", "C","D","C","ED","CE", "CE", "CE","S/Partido")
+
 posicao<-c("DIREITA", "ESQUERDA", "CENTRO", "ESQUERDA", "DIREITA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "DIREITA", "DIREITA", "DIREITA", "DIREITA", "CENTRO", "CENTRO", "DIREITA", "DIREITA", "ESQUERDA", "DIREITA","DIREITA", "CENTRO","DIREITA", "CENTRO","DIREITA","ESQUERDA", "ESQUERDA", "ESQUERDA","S/Partido", "ESQUERDA")
+
 posicao <- data.frame(partido, posicao)
 partido_posicao <- merge(seguidores, posicao)
 ```
 
-
-```{r}
-library(plotly) ## apenas para o hover, pois não estava legível
+Com exceção do PSOL, percebe-se que há linearidade entre a proporção de deputados federais do partido na câmara e a quantidade de seguidores, também por partido. O que não parece depender da ideologia
+```{r warning=FALSE}
 ggplotly(partido_posicao %>%
   ggplot() +
   geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido), y = Seguidores, color = posicao), alpha=.7, size = 4))
   
 ```
-```{r}
-totais <- atividade %>% 
-  filter(!is.na(seguidores), casa == 'câmara') %>%
-  summarize(n_politicos = n(),
-            n_seguidores = sum(seguidores))
-seguidores <- atividade %>% 
-  select(id_parlamentar, partido, seguidores, casa) %>%
-  filter(!is.na(seguidores), casa == 'câmara') %>%
-  group_by(partido) %>%
-  summarize(QntPoliticos = n(),
-            QntSeguidores = sum(seguidores),
-            Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
-            Seguidores = round(QntSeguidores*100/totais$n_seguidores,2)) %>%
-	ungroup() 
 
-partido_posicao <- merge(seguidores, posicao)
-ggplotly(partido_posicao %>%
-  ggplot() +
-  geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido),  y = Seguidores, color = posicao), alpha=.7, size = 4))
+### Segunda Pergunta: A média do engajamento depende do partido?
+Já se sabe que, de modo geral, a quantidade de seguidores cresce à medida que se aumenta a quantidade de seguidores para a câmara.
+Mas de modo geral, as pessoas participam igualmente dos twitter de representantes do mesmo partido? Ou a ideologia não é um fator tão importante quanto o indivíduo político?
 
-```
+
 ```{r}
 atividade %>% 
-  filter(!is.na(engaj_total) &engaj_total<10000) %>%
+  filter(!is.na(engaj_total)) %>%
   select(id_parlamentar, partido, engaj_total) %>%
   ggplot(aes(x=partido, y = engaj_total)) +
   geom_boxplot() +
   geom_point(alpha=0.2, color='orange') + 
-  theme(axis.text.x = element_text(angle = 90))
-
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "Partido", y="Engajamento Total", title="Engajamento por partido")
 
 ```
 
+A maioria dos partidos, como pode-se ver acima, possui engajamento uniforme com algumas exceções. Paulo Eduardo Martins, jornalista do PSC, Carla Zambelli, Bia Kicis, Joice Hasselmann, do PSL e Maria do Rosário, Gleisi Hoffmann, Enio Verri, do PT, por exemplo. Cada um indivíduos dissonantes dentro do seu partido.
 
-```{r}
-atividade %>% 
-  filter(engaj_total>10000 ) %>%
-  select(id_parlamentar, partido, engaj_total) %>%
-  ggplot(aes(x=partido, y = engaj_total)) +
-  geom_boxplot() +
-  geom_point(alpha=0.2, color= 'orange') + 
-  theme(axis.text.x = element_text(angle = 90))
-```
+### Terceira Pergunta: Ser mais engajado/ativo depende do estado que se representa?
 
-```{r}
+Alguns estados são mais engajados do que outro, em média. Como esperado, estados populosos, como Rio de Janeiro e São Paulo, e o Distrito Federal são mais ativos.
+Amapá e Rio Grande do Norte, por outro lado, são surpresas pois aparecem acima de estados populosos como Bahia e Minas Gerais.
+
+```{r warning=FALSE}
 atv_total <- atividade %>%
   select(UF, engaj_total) %>%
   filter(!is.na(engaj_total)) %>%
   group_by(UF) %>%
-  mutate(atv = sum(engaj_total)) %>%
+  mutate(atv = mean(engaj_total)) %>%
   distinct(UF, .keep_all = T) %>% 
   select(-engaj_total) %>%
   arrange(UF) %>%
   ungroup() %>%
   mutate(regiao = c("NORTE", "NORDESTE", "NORTE", "NORTE", "NORDESTE", "NORDESTE", "CENTRO", "SUDESTE", "CENTRO", "NORDESTE", "SUDESTE", "CENTRO", "CENTRO", "NORTE", "NORDESTE", "NORDESTE", "NORDESTE", "SUL", "SUDESTE", "NORDESTE", "NORTE", "NORTE","SUL", "SUL", "NORDESTE", "SUDESTE", "NORTE"))
-atv_total$UF
+
 ggplot() +
   geom_point(atv_total, mapping= aes(x=UF, y=atv, color=regiao), size = 3 ) +
-  geom_point(atividade, mapping= aes(x=UF, y=engaj_total), alpha = .08, color = 'navy')
+  geom_point(atividade, mapping= aes(x=UF, y=engaj_total), alpha = .08, color = 'navy') +
+  ylim(0, 250000) +
+  labs(title = "Engajamento do partido pelo estado e região do país", y = "Engajamento")
     
 ```
-```{r}
+
+### Quarta pergunta: Qual é o partido com maior número de likes e retweets?
+
+O vermelho é o total de atividade, likes e retweets, do partido e, em azul, as atividades individuais dos representantes. O resultado não é surpreendente, os representantes mais dissonantes vistos nos boxplots, provavelmente, puxam os valores dos seus partidos: PSL, muito acima dos demais, PT e PSOL.
+
+```{r warning=FALSE}
 atv_total <- atividade %>%
   select(partido, engaj_total) %>%
   filter(!is.na(engaj_total)) %>%
@@ -124,10 +122,7 @@ atv_total <- atividade %>%
 ggplot() +
   geom_point(atv_total, mapping= aes(x=reorder(partido, atv), y=atv), size = 3, color='red', alpha = .6 )+
   geom_point(atividade, mapping= aes(x=partido, y=engaj_total), alpha = .1, color = 'navy') + 
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "Partido", y = "Atividade", title = "Atividade total por partido")
     
 ```
-```{r}
-
-```
-
