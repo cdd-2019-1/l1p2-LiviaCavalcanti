@@ -11,6 +11,7 @@ author: "Lívia Cavalcanti"
 library(tidyverse)
 library(ggplot2)
 library(plotly) ## apenas para o hover, pois não estava legível
+options(scipen = 999)
 
 source(here::here("code/lib.R"))
 theme_set(theme_bw())
@@ -128,6 +129,7 @@ ggplot() +
 ```
 
 ```{r}
-atividade %>% filter(!is.na(seguidores)) %>% mutate(total_tweets = n_proprio + n_retweet) %>% ggplot(aes(total_tweets, engaj_max)) + geom_point() + scale_y_log10() + scale_x_log10() + geom_smooth(method = "lm") ###
+library(scales)
+atividade %>% filter(!is.na(seguidores)) %>% mutate(total_tweets = n_proprio + n_retweet) %>% ggplot(aes(total_tweets, engaj_max)) + geom_point(alpha=.4, colour="#00CED1") + scale_y_log10() + scale_x_log10() + geom_smooth(method = "lm", colour = "#006f6f")
 ```
 

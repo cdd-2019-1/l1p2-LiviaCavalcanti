@@ -1,0 +1,104 @@
+---
+title: "analise conjunta"
+author: "Lívia Cavalcanti"
+date: "12 de abril de 2019"
+output: html_document
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(plotly) ## apenas para o hover, pois não estava legível
+options(scipen = 999)
+
+source(here::here("code/lib.R"))
+theme_set(theme_bw())
+```
+
+
+
+```{r read}
+atividade = read_projectdata()
+tail(atividade)
+```
+
+```{r}
+  
+utilizadores_camara = nrow(atividade %>% filter(!is.na(seguidores), casa == "câmara", engaj_total_proprio>10))
+utilizadores_senado = nrow(atividade %>% filter(!is.na(seguidores), casa == "senado", engaj_total_proprio>10))
+total_camara = nrow(atividade %>% filter(casa == "câmara"))
+total_senado = nrow(atividade %>% filter(casa == "senado"))
+  
+proporcao_camara = utilizadores_camara / total_camara
+proporcao_senado = utilizadores_senado / total_senado
+vetor_grafico = c(proporcao_camara, proporcao_senado)
+rotulos = c("Câmara", "Senado")
+data.frame(vetor_grafico, rotulos) %>% ggplot(aes(x = rotulos, y = vetor_grafico)) + geom_bar(stat = "identity", fill=c("#DC143C", "#6A5ACD"), col=c("#DC143C", "#6A5ACD"), alpha=.6) + labs(x = "Casas", y = "Pessoas que usam twitter (%)", title = "Visualização dos parlamentares que usam twitter em cada casa \n (Proporcionalmente)") + theme(plot.title = element_text(hjust = 0.5)) + scale_y_continuous(limits = c(0,1.1))
+```
+Com essa visualização, nós podemos perceber que, proporcionalmente, o senado tem mais usuários do twitter se comparado à câmara, superando a margem de 90 por cento de utilizadores, considerando que o representante tem um Twitter com mais de dez depostagens.
+
+```{r}
+
+totais <- atividade %>% 
+  filter(!is.na(seguidores) & casa == "câmara") %>%
+  summarize(n_politicos = n(),
+            n_seguidores = sum(seguidores))
+seguidores <- atividade %>% 
+  select(id_parlamentar, partido, seguidores) %>%
+  filter(!is.na(seguidores))%>%
+  group_by(partido) %>%
+  summarize(QntPoliticos = n(),
+            QntSeguidores = sum(seguidores),
+            Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
+            Seguidores = round(QntSeguidores*100/totais$n_seguidores,2))
+
+
+```
+ 
+```{r echo=FALSE}
+partido <- c("NOVO", "PDT", "AVANTE", "PCdoB", "PROS", "PSB", "PT", "REDE","PSOL","PSL","PRP", "PR", "PRB","MDB", "PTB","PP","DEM","SD", "PSD","PHS","PODE", "PSC", "PSDB", "PATRI", "PMN", "PPS", "PV","S/Partido", "SOLIDARIEDADE")
+
+posicao<-c("DIREITA", "ESQUERDA", "CENTRO", "ESQUERDA", "DIREITA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "DIREITA", "DIREITA", "DIREITA", "DIREITA", "CENTRO", "CENTRO", "DIREITA", "DIREITA", "ESQUERDA", "DIREITA","DIREITA", "CENTRO","DIREITA", "CENTRO","DIREITA","ESQUERDA", "ESQUERDA", "ESQUERDA","S/Partido", "ESQUERDA")
+
+posicao <- data.frame(partido, posicao)
+partido_posicao <- merge(seguidores, posicao)
+```
+
+Com exceção do PSOL, percebe-se que há linearidade entre a proporção de deputados federais do partido na câmara e a quantidade de seguidores, também por partido. O que não parece depender da ideologia
+```{r warning=FALSE}
+ggplotly(partido_posicao %>%
+  ggplot() +
+  geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido), y = Seguidores, color = posicao), alpha=.7, size = 4))
+  
+```
+
+```{r pressure, echo=FALSE}
+totais <- atividade %>% 
+  filter(!is.na(seguidores) & casa == "câmara") %>%
+  summarize(n_politicos = n(),
+            n_seguidores = sum(seguidores))
+seguidores <- atividade %>% 
+  select(id_parlamentar, partido, seguidores) %>%
+  filter(!is.na(seguidores))%>%
+  group_by(partido) %>%
+  summarize(QntPoliticos = n(),
+            QntSeguidores = sum(seguidores),
+            Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
+            Seguidores = round(QntSeguidores*100/totais$n_seguidores,2))
+```
+
+```{r}
+atividade %>% filter(!is.na(seguidores)) %>% mutate(total_tweets = n_proprio + n_retweet) %>% ggplot(aes(total_tweets, engaj_max)) + geom_point(alpha=.4, colour="#00CED1") + scale_y_log10() + scale_x_log10() + geom_smooth(method = "lm", colour = "#006f6f")
+```
+
+```{r}
+atividade %>%
+  rowwise() %>%
+  mutate(tem_tt=if(!is.na(twitter) & !is.na(seguidores)) 1 else 0, n_tt=if(is.na(twitter) | is.na(seguidores)) 1 else 0) %>%
+  group_by(UF) %>%
+  summarise(com_tt = sum(tem_tt), sem_tt = sum(n_tt)) %>%
+  plot_ly(x = ~UF, y = ~sem_tt, type = 'bar', name = 'Não tem Twitter') %>%
+  add_trace(y = ~com_tt, name="Tem Twitter") %>%
+  layout(yaxis = list(title = 'Quantidade de Congressistas'), barmode = 'stack')
+```
+
