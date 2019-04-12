@@ -37,39 +37,38 @@ data.frame(vetor_grafico, rotulos) %>% ggplot(aes(x = rotulos, y = vetor_grafico
 ```
 Com essa visualização, nós podemos perceber que, proporcionalmente, o senado tem mais usuários do twitter se comparado à câmara, superando a margem de 90 por cento de utilizadores, considerando que o representante tem um Twitter com mais de dez depostagens.
 
-```{r}
 
-totais <- atividade %>% 
-  filter(!is.na(seguidores) & casa == "câmara") %>%
-  summarize(n_politicos = n(),
-            n_seguidores = sum(seguidores))
-seguidores <- atividade %>% 
-  select(id_parlamentar, partido, seguidores) %>%
-  filter(!is.na(seguidores))%>%
-  group_by(partido) %>%
-  summarize(QntPoliticos = n(),
-            QntSeguidores = sum(seguidores),
-            Proporcao = round(QntPoliticos*100/totais$n_politicos, 2),
-            Seguidores = round(QntSeguidores*100/totais$n_seguidores,2))
+De modo geral, as pessoas participam igualmente dos twitter de representantes do mesmo partido? Ou a ideologia não é um fator tão importante quanto o indivíduo político?
 
-
-```
- 
-```{r echo=FALSE}
-partido <- c("NOVO", "PDT", "AVANTE", "PCdoB", "PROS", "PSB", "PT", "REDE","PSOL","PSL","PRP", "PR", "PRB","MDB", "PTB","PP","DEM","SD", "PSD","PHS","PODE", "PSC", "PSDB", "PATRI", "PMN", "PPS", "PV","S/Partido", "SOLIDARIEDADE")
-
-posicao<-c("DIREITA", "ESQUERDA", "CENTRO", "ESQUERDA", "DIREITA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "ESQUERDA", "DIREITA", "DIREITA", "DIREITA", "DIREITA", "CENTRO", "CENTRO", "DIREITA", "DIREITA", "ESQUERDA", "DIREITA","DIREITA", "CENTRO","DIREITA", "CENTRO","DIREITA","ESQUERDA", "ESQUERDA", "ESQUERDA","S/Partido", "ESQUERDA")
-
-posicao <- data.frame(partido, posicao)
-partido_posicao <- merge(seguidores, posicao)
-```
-
-Com exceção do PSOL, percebe-se que há linearidade entre a proporção de deputados federais do partido na câmara e a quantidade de seguidores, também por partido. O que não parece depender da ideologia
 ```{r warning=FALSE}
-ggplotly(partido_posicao %>%
-  ggplot() +
-  geom_point(aes(x= Proporcao, text=sprintf("Partido: %s",partido), y = Seguidores, color = posicao), alpha=.7, size = 4))
+atividade %>% 
+  filter(!is.na(engaj_total)) %>%
+  select(id_parlamentar, partido, engaj_total) %>%
+  ggplot(aes(x=partido, y = engaj_total)) +
+  geom_boxplot(outlier.alpha = .6) +
+  geom_point(alpha=0.2, color='orange') + 
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "Partido", y="Engajamento Total", title="Engajamento por partido") +
+  scale_y_log10()
+
   
+```
+O engajamento é, em geral, bem distribuído dentro de cada partido para os representantes com mais de 25% e menos de 75% dos engajamentos, com a posição da mediana próxima do meio da caixa para a maioria deles.
+Apesar disso, há caixas bem elásticas, mostrando a existência de variações. As maiores estão no DEM, PODEMOS e PSB.
+A última análise que podemos fazer é que há poucos representantes com valores discrepantes para o engajamento total. Alguns deles são: Chico D'Angelo, Eros Biondini, Jandira Feghali, Marcelo Ramos e Paulo Eduardo Martins, com valores acima do máximo para o boxplot, e Dagoberto Nogueira, Euclydes Pettersen, Professor Joziel e Professora Rosa Neide, com valores Inferiores.
+
+```{r echo=FALSE}
+atividade %>% 
+  filter(partido %in% c("PCdoB","PDT", "PR", "PROS", "PSC"), !is.na(engaj_total)) %>%
+  select(partido, nome_eleitoral, engaj_total) %>%
+  group_by(partido) %>%
+  filter(engaj_total == max(engaj_total) )
+
+atividade %>% 
+  filter(partido %in% c("PDT", "PSC", "PSL", "PT"), !is.na(engaj_total), engaj_total > 0) %>%
+  select(partido, nome_eleitoral, engaj_total) %>%
+  group_by(partido) %>%
+  filter(engaj_total == min(engaj_total))
 ```
 
 ```{r pressure, echo=FALSE}
