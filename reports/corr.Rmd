@@ -47,6 +47,7 @@ twitteiros %>%
 ```
 
 Não há correlação linear alguma, segundo Pearson, entre a quantidade de perfis que o respresentante segue e a quantidade de retuítes que ele faz. Mas há uma correlação monotônica positiva entre essas duas variáveis, ou seja, o crescimento de um valor leva ao crescimento do outro de alguma forma não-linear, ainda que fracamente.
+Com isso, mesmo modificando a escala pouca organização nos dados é vista.
 
 ## Além de seguir as pessoas interagem?
 
@@ -56,6 +57,7 @@ twitteiros  %>%
             spearman = cor(seguidores, engaj_mediano, method = "spearman"))
 ```
 Como visto na prática, o total de seguidores não reage a todas as postagens. Ou seja, de modo geral, as reações aos tweets são menores do que a quantidade de seguidores. Mas quanto mais seguidores maior o número de retweets e likes. Essa relação pode ser modelada de forma mais fraca, linearmente falando, de acordo com o valor de Pearson, e, mais forte para o coeficiente de Spearman, ou seja, há uma relação não-linear para esse crescimento.
+No gráfico, pode-se ver que os dados estão bem dispostos não havendo pontos extremos fugindo à tendência geral. No máximo, um afastamento não muito expressivo, como dos três pontos na região central e na extrema direta do gráfico.
 ```{r warning=FALSE}
 twitteiros %>%
   ggplot(aes(seguidores, engaj_mediano)) +
