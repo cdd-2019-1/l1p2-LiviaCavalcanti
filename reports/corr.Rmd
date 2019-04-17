@@ -1,0 +1,67 @@
+---
+title: "Correlações dos Representantes no Twitter"
+output:
+    html_document:
+    df_print: paged
+theme: sandstone
+author: "Lívia Cavalcanti"
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(plotly) ## apenas para o hover, pois não estava legível
+options(scipen = 999)
+
+source(here::here("code/lib.R"))
+theme_set(theme_bw())
+```
+
+## Olhando os dados de novo
+
+```{r read}
+atividade = read_projectdata()
+twitteiros <- atividade %>% 
+  filter(!is.na(seguidores))
+tail(twitteiros)
+```
+
+## Quanto mais o representante segue mais ele retuíta?
+
+
+```{r warning=FALSE}
+twitteiros  %>% 
+  summarise(pearson = cor(segue, n_retweet, method = "pearson"), 
+            spearman = cor(segue, n_retweet, method = "spearman"))
+
+
+```
+
+```{r warning=FALSE}
+twitteiros %>%
+  ggplot(aes(segue, n_retweet)) +
+  geom_point(color="#FC4C4E", alpha=.85) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(y="Número de Retweets", x = "Número de 'Seguindo'")
+```
+
+Não há correlação linear alguma, segundo Pearson, entre a quantidade de perfis que o respresentante segue e a quantidade de retuítes que ele faz. Mas há uma correlação monotônica positiva entre essas duas variáveis, ou seja, o crescimento de um valor leva ao crescimento do outro de alguma forma não-linear, ainda que fracamente.
+
+## Além de seguir as pessoas interagem?
+
+```{r}
+twitteiros  %>% 
+  summarise(pearson = cor(seguidores, engaj_mediano, method = "pearson"), 
+            spearman = cor(seguidores, engaj_mediano, method = "spearman"))
+```
+Como visto na prática, o total de seguidores não reage a todas as postagens. Ou seja, de modo geral, as reações aos tweets são menores do que a quantidade de seguidores. Mas quanto mais seguidores maior o número de retweets e likes. Essa relação pode ser modelada de forma mais fraca, linearmente falando, de acordo com o valor de Pearson, e, mais forte para o coeficiente de Spearman, ou seja, há uma relação não-linear para esse crescimento.
+```{r warning=FALSE}
+twitteiros %>%
+  ggplot(aes(seguidores, engaj_mediano)) +
+  geom_point(color="#FC4C4E", alpha=.85) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = "Número de Seguidores", y = "Engajamento Mediano")
+```
+
